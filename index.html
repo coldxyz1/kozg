@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Próba teszt (Moodle-szerű minta) – 15 kérdéses véletlenszerű teszt</title>
+<style>
+  :root {
+    --bg: #0e0e10;
+    --nav: #12151c;
+    --link: #5fb4ff;
+    --crumb: #202124;
+    --panel: #343b4f;
+    --card: #e5f2f6;
+    --card-text: #1b1f24;
+    --drawer: #2b303b;
+    --accent: #0d6efd;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: #fff; min-height: 100%;
+               font-family: "Segoe UI", system-ui, Arial, sans-serif; }
+
+  /* felső navigáció */
+  .navbar { height: 76px; background: var(--nav); border-bottom: 1px solid #2a2f3a;
+            display: flex; align-items: center; gap: 22px; padding: 0 24px 0 66px; }
+  .logo { background: #fff; color: #10254a; font-weight: 800; letter-spacing: .5px; padding: 10px 14px;
+          border-radius: 3px; font-size: 18px; line-height: 1.05; }
+  .logo small { display: block; font-size: 9px; font-weight: 600; letter-spacing: 0; }
+  .navbar a { color: var(--link); font-size: 20px; text-decoration: none; margin-right: 4px; }
+  .navbar .sp { flex: 1; }
+  .avatar { width: 44px; height: 44px; border-radius: 50%; background: #e6e8ee; color: #222;
+            display: grid; place-items: center; font-size: 20px; }
+
+  /* bal oldali ikonsáv */
+  .strip { position: fixed; left: 0; top: 77px; bottom: 0; width: 50px; background: #15171c; border-right: 1px solid #23262d; }
+
+  .page { display: flex; min-height: calc(100vh - 77px); }
+  .main { flex: 1; padding: 46px 20px 80px 70px; }
+  .drawer { width: 393px; flex: none; background: #232731; padding: 80px 20px 20px 10px; }
+  .drawer .box { background: var(--drawer); border-radius: 12px; padding: 26px 20px 22px 20px;
+                 box-shadow: 0 8px 22px rgba(0,0,0,.35); max-height: 85vh; overflow-y: auto; }
+  .drawer h3 { margin: 0 0 20px 0; font-size: 25px; font-weight: 500; }
+  .qgrid { display: grid; grid-template-columns: repeat(5, 48px); gap: 10px; }
+  .qb { height: 48px; border: 1px solid #aab; background: #1b1e25; color: #fff; text-align: left;
+        padding: 4px 6px; font-size: 16px; border-radius: 3px; cursor: pointer; position: relative; }
+  .qb.done { background: linear-gradient(to bottom, #1b1e25 55%, #7b8396 55%); }
+  .qb.cur { outline: 3px solid #fff; outline-offset: 2px; }
+  .finish-link { display: inline-block; margin-top: 24px; color: var(--link); font-size: 20px; cursor: pointer; }
+
+  .content { width: 980px; max-width: 100%; margin: 0 auto; }
+  .crumbs { background: var(--crumb); padding: 14px 0 12px 0; font-size: 20px; line-height: 1.5; margin-bottom: 14px; }
+  .crumbs div + div::before { content: "/ "; color: #888; }
+  .title { display: flex; align-items: center; gap: 18px; margin: 10px 0 36px 0; }
+  .title h1 { font-size: 38px; margin: 0; font-weight: 800; }
+  .title svg { flex: none; }
+  .controls { display: flex; gap: 10px; margin-bottom: 20px; }
+  .btn { font-size: 20px; padding: 11px 17px; border-radius: 9px; border: 1px solid transparent; cursor: pointer; }
+  .btn.gray { background: #d5d8de; color: #1b1f24; }
+  .btn.blue { background: var(--accent); color: #fff; }
+  .btn:disabled { opacity: .5; cursor: default; }
+
+  .qrow { display: flex; gap: 20px; margin-top: 20px; align-items: flex-start; }
+  .info { width: 140px; flex: none; background: var(--panel); border: 1px solid #4a526a; padding: 12px 11px; font-size: 15px; line-height: 1.55; }
+  .info .no { font-size: 22px; font-weight: 700; margin-bottom: 8px; }
+  .info .no small { font-size: 16px; font-weight: 400; }
+  .info div + div { margin-top: 10px; }
+  .info .flag { color: var(--link); }
+  .card { flex: 1; background: var(--card); color: var(--card-text); border: 1px solid #b6d7df; border-radius: 8px;
+          padding: 22px 20px 30px 20px; min-height: 225px; }
+  .qtext { font-size: 20px; line-height: 1.5; margin: 0 0 40px 0; }
+  .prompt { color: #fff; opacity: .85; font-size: 20px; margin-bottom: 20px; }
+  .opt { display: flex; align-items: center; gap: 12px; font-size: 19px; margin: 0 0 16px 4px; width: fit-content; cursor: pointer; }
+  .opt input { appearance: none; -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%;
+               background: #2b2d33; border: 2px solid #2b2d33; margin: 0; cursor: pointer; flex-shrink: 0; }
+  .opt input:checked { background: radial-gradient(circle, #fff 0 30%, var(--accent) 34% 100%); border-color: var(--accent); }
+  .nav { display: flex; justify-content: space-between; margin-top: 52px; }
+  .help { position: fixed; right: 440px; bottom: 36px; width: 40px; height: 40px; border-radius: 50%;
+          background: #3a3f4a; color: #fff; display: grid; place-items: center; font-size: 20px; z-index: 5; }
+
+  /* összegző oldal */
+  table.sum { border-collapse: collapse; width: 100%; background: var(--card); color: var(--card-text); font-size: 19px; }
+  table.sum th, table.sum td { padding: 10px 14px; border-bottom: 1px solid #b6d7df; text-align: left; }
+  .result { background: var(--card); color: var(--card-text); border-radius: 8px; padding: 22px 24px; font-size: 19px; }
+  .ok { color: #0a7a3c; font-weight: 600; } .bad { color: #b3261e; font-weight: 600; }
+  .hidden { display: none; }
+
+  body::after { content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 50;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='170'><text x='30' y='100' transform='rotate(-20 150 85)' fill='white' fill-opacity='0.07' font-size='38' font-family='Arial' font-weight='bold'>AB12CD</text></svg>"); }
+</style>
+</head>
+<body>
+
+<div class="navbar">
+  <div class="logo">MINTA<br>EGYETEM<small>PRACTICE UNIVERSITY</small></div>
+  <a>Kezdőoldal</a><a>Irányítópult</a><a>Kurzusaim</a><a>Hasznos linkek ⌄</a>
+  <span class="sp"></span>
+  <span class="avatar">D</span>
+</div>
+<div class="strip"></div>
+
+<div class="page">
+  <div class="main">
+    <div class="content">
+      <div class="crumbs">
+        <div style="margin-left:0">Minta kurzus (PROBA_001) 2026-27/1</div>
+        <div>Közgazdaságtan teszt kérdések</div>
+        <div>Véletlenszerű 15 kérdéses teszt (115 kérdéses adatbázisból)</div>
+      </div>
+
+      <div class="title">
+        <svg width="50" height="50" viewBox="0 0 50 50" fill="none" stroke="#ff2d95" stroke-width="3">
+          <rect x="3" y="3" width="44" height="44" rx="6"/><path d="M13 17h4M13 25h4M13 33h4M23 17h14M23 25h14M23 33h14"/>
+        </svg>
+        <h1>Próba teszt – 15 Véletlenszerű Kérdés</h1>
+      </div>
+
+      <div class="controls">
+        <button class="btn gray" id="back">Vissza</button>
+        <button class="btn blue" id="newset">Új 15 kérdés generálása</button>
+      </div>
+
+      <!-- kérdés nézet -->
+      <div id="qview">
+        <div class="qrow">
+          <aside class="info">
+            <div class="no"><span id="qn">1</span> <small>kérdés</small></div>
+            <div id="qstate">Még nincs rá válasz</div>
+            <div>1,00 pont szerezhető</div>
+            <div class="flag">⚑ A kérdés megjelölése</div>
+          </aside>
+          <section class="card">
+            <p class="qtext" id="qtext"></p>
+            <div class="prompt">Válasszon ki egyet:</div>
+            <div id="opts"></div>
+          </section>
+        </div>
+        <div class="nav">
+          <div><button class="btn gray" id="prev">Előző oldal</button></div>
+          <button class="btn blue" id="next">Következő oldal</button>
+        </div>
+      </div>
+
+      <!-- összegző nézet -->
+      <div id="sview" class="hidden">
+        <h2 style="margin:30px 0 14px 0">Összegzés (15/15 kérdés)</h2>
+        <table class="sum" id="stable"></table>
+        <div class="nav"><div><button class="btn gray" id="backtoq">Vissza a próbálkozáshoz</button></div>
+          <button class="btn blue" id="submit">Összes beadása és befejezés</button></div>
+      </div>
+
+      <!-- eredmény -->
+      <div id="rview" class="hidden"><h2 style="margin:30px 0 14px 0">Eredmény</h2><div class="result" id="rbody"></div></div>
+    </div>
+  </div>
+
+  <aside class="drawer">
+    <div class="box">
+      <h3>Tesztnavigáció (15 kérdés)</h3>
+      <div class="qgrid" id="qgrid"></div>
+      <span class="finish-link" id="finish">Próbálkozás vége ...</span>
+    </div>
+  </aside>
+</div>
+<div class="help">?</div>
+
+<script>
+(function () {
+  var TF = ["Igaz", "Hamis"];
+
+  // Mind a 115 egyedi kérdés az adatbázisból
+  var ALL_QUESTIONS = [
+    { t: "A termelési lehetőségek határa az adott erőforrásfeltételek mellett megvalósítható maximális termelési portfóliókat mutatja.", o: TF, c: 0 },
+    { t: "Tegyük fel, hogy Ön egy órát arra fordít, hogy elmélyedjen a közgazdaságtan rejtelmeiben. Jelölje meg, hogy az alábbiak közül melyek lehetnek ennek a tevékenységnek az alternatív költségei?", o: ["a. A tandíjnak erre az órára eső hányada, amelyet a tanulásra fordított összes idő alapján a vizsgaidőszak végén határozhat meg pontosan.", "b. Az étel ára, amely ahhoz kellett, hogy koncentrálni tudjon.", "c. Az Ön órabére.", "d. Az egy órára eső áramfogyasztás"], c: 2 },
+    { t: "A komparatív előnyök elmélete az 1800-as évek első felében került kidolgozásra.", o: TF, c: 0 },
+    { t: "Döntse el, hogy adott termék keresleti függvénye jobbra vagy balra tolódik el, ha a helyettesítő termék ára emelkedik.", o: ["a. jobbra", "b. balra."], c: 0 },
+    { t: "A piaci kereslet az egyéni keresletek aggregált értéke.", o: TF, c: 1 },
+    { t: "A piac a potenciális eladók és vevők találkozásának fizikai tere.", o: TF, c: 1 },
+    { t: "Az egyéni munkakínálati függvénynek általában van visszahajló (negatív meredekségű szakasza).", o: TF, c: 0 },
+    { t: "Aladár két terméket fogyaszt (x-et és y-t). x termék ára 20, y terméké 10. Aladár jövedelme 500 egység. Hol metszi Aladár költségvetési egyenese az X tengelyt?", o: ["a. 50", "b. 100", "c. 25", "d. 10"], c: 2 },
+    { t: "Jelölje be melyik állítás igaz arra az esetre, hogy az árak emelkedése a kereslet növekedéséhez vezet!", o: ["a. Nem érvényesül a Veblen-hatás.", "b. A fogyasztó inferior jószágot vásárol.", "c. A termék árrugalmatlan.", "d. A helyettesítési határrátája állandó.", "e. A fogyasztó Giffen-javakat vásárol."], c: 4 },
+    { t: "A vállalati nyereség, más néven a profit a vállalat bevételeinek és a bevételt terhelő költségeknek a különbsége.", o: TF, c: 0 },
+    { t: "Az alábbiak közül melyikre vonatkozik a következő: „Megmutatja, hogy mennyivel nő a termelés, ha egy egységgel több termelési tényezőt alkalmaznak?”", o: ["a. Gazdasági költség", "b. Határtermék", "c. Átlagos költség", "d. Átlagos fix költség", "e. Határbevétel", "f. Átlagos változó költség", "g. Átlagtermék", "h. Határköltség", "i. Változó költség", "j. Teljes költség", "k. Fix költség"], c: 1 },
+    { t: "A parciális termelési függvény azt mutatja meg, hogyan alakul a termelés, ha az egyik tényező felhasználását változtatjuk, miközben a másik tényező mennyisége változatlan.", o: TF, c: 0 },
+    { t: "Az üzembezárási pontban a teljes bevétel megegyezik a teljes költséggel.", o: TF, c: 1 },
+    { t: "Az autópiac hasonlít a", o: ["a. monopol piac.", "b. monopolisztikus versenypiac.", "c. duopol piac.", "d. nem tudjuk.", "e. tökéletes versenypiac."], c: 3 },
+    { t: "Az üzembezárási pontban a határköltség megegyezik az átlagos változó költség minimumával.", o: TF, c: 0 },
+    { t: "Ha Béla kétszer akkora mennyiségű fát vág ki azonos idő alatt mint Lajos és a bérük azonos, akkor Bélának abszolút előnye van Lajossal szemben.", o: TF, c: 0 },
+    { t: "A közgazdaságtudomány a társadalomtudományok közé sorolható.", o: TF, c: 0 },
+    { t: "A gazdálkodás legfőbb oka a telítettség.", o: TF, c: 1 },
+    { t: "Döntse el, hogy adott termék keresleti függvénye jobbra vagy balra tolódik el, ha kiderül, hogy több helyütt lejárt szavatosságú termék került forgalomba.", o: ["a. jobbra", "b. balra."], c: 1 },
+    { t: "Az egyéni kereslet reálnagyság.", o: TF, c: 0 },
+    { t: "A rezervációs ár és a telítődési pont hányadosa a lineáris keresleti függvény meredekségének abszolút értéke.", o: TF, c: 0 },
+    { t: "A szabadidő optimális mennyiségének meghatározásakor az életminőség közömbösségi görbékhez mért életminőség-korlátot jelentő egyenes meredeksége az órabért tükrözi.", o: TF, c: 0 },
+    { t: "Az alábbiak közül melyikhez köthető Gossen II. törvénye? Jelölje meg!", o: ["a. Az előnykiegyenlítődés elve.", "b. Helyettesítési határráta.", "c. Gossen I. törvénye.", "d. Határhaszon.", "e. Költségvetési korlát."], c: 0 },
+    { t: "Az egyén a magasabb órabér hatására mindig többet akar dolgozni.", o: TF, c: 1 },
+    { t: "A határtermék kifejezi, hogy az egyik termelési tényező egységnyi változása mennyivel változtatja meg a termelést a másik tényező változatlansága mellett.", o: TF, c: 0 },
+    { t: "Növekvő skálahozadék esetén a termelési tényezők 1-1 százalékkal való növelésével a termelés több, mint 1 százalékkal növekszik.", o: TF, c: 0 },
+    { t: "Csökkenő skálahozadék esetén a termelés nagyobb mértékben növekszik, mint amilyen mértékben a termelési tényezőket növeltük.", o: TF, c: 1 },
+    { t: "A tökéletes verseny modellben egyensúlyban a gazdasági profit 0.", o: TF, c: 0 },
+    { t: "Az üzembezárási pont alatti termelésnél is lehet gazdasági profit.", o: TF, c: 1 },
+    { t: "A gazdasági profit a teljes bevétel és a gazdasági költség differenciája.", o: TF, c: 0 },
+    { t: "A gazdálkodás célja az, hogy minél gazdagabbak legyünk.", o: TF, c: 1 },
+    { t: "A gazdálkodás csak vállalati szinten értelmezhető.", o: TF, c: 1 },
+    { t: "A közgazdaságtan neoklasszikus modelljében a gazdasági szereplők _____ követik.", o: ["a. a Farkas-Koppány könyvet", "b. a gazdasági sajtó útmutatásait", "c. a gazdasági trendeket", "d. önérdeküket", "e. a törvény betűjét", "f. megérzéseiket", "g. szakértelmüket vagy a pénzügyi-gazdasági tanácsadók javaslatait"], c: 3 },
+    { t: "Döntse el, hogy adott termék keresleti függvénye jobbra vagy balra tolódik el, ha a konkurencia akciókkal próbál fogyasztókat nyerni.", o: ["a. jobbra", "b. balra."], c: 1 },
+    { t: "Döntse el, hogy adott termék keresleti függvénye jobbra vagy balra tolódik el, ha drasztikus bércsökkenés következik be minden szférában.", o: ["a. balra.", "b. jobbra"], c: 0 },
+    { t: "Döntse el, hogy adott termék keresleti függvénye jobbra vagy balra tolódik el, ha jobban reklámozzák a terméket.", o: ["a. jobbra", "b. balra."], c: 0 },
+    { t: "Az egyéni munkakínálati függvény az órabér és a munkával töltött idő közötti összefüggést mutatja.", o: TF, c: 0 },
+    { t: "Melyik mondatrésszel egészítené ki az alábbi mondatot a felsoroltak közül? „A közömbösségi görbe pontjai: …”", o: ["a. azonos hasznosságú jószágkombinációkat tartalmaznak.", "b. azonos meredekségűek.", "c. azonos preferenciájúak.", "d. azonos határhasznú jószágkombinációkat tartalmaznak.", "e. azonos helyettesítési határrátájúak.", "f. azonos helyettesítési rátájúak."], c: 0 },
+    { t: "Péter 8 szelt tortát kapott születésnapjára. A tortaszeletek elfogyasztása során Péter haszonérzete (összhaszna)", o: ["a. folyamatosan nő.", "b. folyamatosan csökken.", "c. egy ideig nő, aztán csökken."], c: 2 },
+    { t: "Az alábbiak közül melyikre vonatkozik a következő: „Az egy termékegységre jutó összes költség?”", o: ["a. Határtermék", "b. Határbevétel", "c. Teljes költség", "d. Gazdasági költség", "e. Átlagos fix költség", "f. Átlagos költség", "g. Határköltség", "h. Változó költség", "i. Átlagos változó költség", "j. Fix költség", "k. Átlagtermék"], c: 5 },
+    { t: "A vállalat nyeresége annál a termelési szintnél maximális, ahol a határbevétel megegyezik a határköltséggel.", o: TF, c: 0 },
+    { t: "Az isoquant-görbe alakja a termelési függvénytől független.", o: TF, c: 1 },
+    { t: "Az üzembezárási pontban a teljes bevétel megegyezik a fix költséggel.", o: TF, c: 1 },
+    { t: "Az üzembezárási pontban a teljes bevétel megegyezik a változó költséggel.", o: TF, c: 0 },
+    { t: "A fedezeti pontban a határköltség megegyezik az átlagos változó költség minimumával.", o: TF, c: 1 },
+    { t: "A közgazdaságtan neoklasszikus modelljében a gazdasági szereplők _____ döntenek.", o: ["a. érzelmi alapon", "b. megfontoltan", "c. józanul", "d. hüvelykujjszabályok alapján", "e. könnyen", "f. gyorsan", "g. racionálisan"], c: 6 },
+    { t: "Az komparatív előny alapja az összehasonlító ár.", o: TF, c: 1 },
+    { t: "A termelési lehetőségek határa mentén történő elmozdulás a helyettesítési ráta.", o: TF, c: 0 },
+    { t: "Ha adott kereslet mellett egy termék kínálatát növeljük a piacon, akkor annak ára valószínűleg", o: ["a. változatlan marad.", "b. emelkedni fog.", "c. csökkenni fog."], c: 2 },
+    { t: "Döntse el, hogy adott termék keresleti függvénye jobbra vagy balra tolódik el, ha a gyártót megbírságolja a fogyasztóvédelmi hatóság.", o: ["a. balra.", "b. jobbra"], c: 0 },
+    { t: "Két isoquant-görbe nem metszheti és nem érintheti egymást, mert ha egyetlen közös pontjuk van, akkor minden pontjuk közös.", o: TF, c: 0 },
+    { t: "A számviteli költségnek nem része", o: ["a. az explicit költség", "b. az amortizáció", "c. a gazdasági költség", "d. az opportunity cost"], c: 3 },
+    { t: "Piaci időtávon", o: ["a. mindkét tényező mennyisége változtatható.", "b. csak a munka mennyisége változtatható.", "c. csak a tőke mennyisége változtatható.", "d. egyik termelési tényező mennyisége sem változtatható."], c: 3 },
+    { t: "A fedezeti pontban a határköltség megegyezik az átlagköltség minimumával.", o: TF, c: 0 },
+    { t: "Milyen eszközökkel képes alkalmazkodni a monopólium a piaci folyamatokhoz?", o: ["a. termelt mennyiség.", "b. a termék tulajdonságainak változtatása.", "c. marketing.", "d. piaci ár."], c: 0 },
+    { t: "A tökéletes verseny modellben a vállalatok száma egy.", o: TF, c: 1 },
+    { t: "A gazdálkodás legfőbb oka a szűkösség.", o: TF, c: 0 },
+    { t: "Az alábbiak közül jelölje meg azt, ami nem számít termelési termelési tényezőnek (akkor is, ha valamelyik termelési tényezőnek tekintjük a termelési tényezők konkrét megjelenési formáit is).", o: ["a. bánya.", "b. föld.", "c. tőkejavak.", "d. munkaerő.", "e. állam.", "f. számítógép"], c: 4 },
+    { t: "A gazdálkodás lényege a szűkösen rendelkezésre álló erőforrások minél hatékonyabb felhasználása.", o: TF, c: 0 },
+    { t: "Egy termék piacán 200 Ft az egyensúlyi ár, melyhez 40 db-os egyensúlyi mennyiség tartozik. Mi történik akkor, ha 250 Ft-ra emelkedik az ár?", o: ["a. A piacon többlet alakul ki.", "b. A keresett mennyiség emelkedik.", "c. A keresett mennyiség változatlan marad."], c: 0 },
+    { t: "Jelölje meg az alábbi állítások közül azokat, amelyek igazak! Ha egy vállalat árbevétele 1200 egység volt az explicit költség 600, az amortizáció 400, a gazdasági költség pedig 1000 egység, akkor", o: ["a. A gazdasági profit 400 egység.", "b. Számviteli profit nincs.", "c. A normál profit 300 egység.", "d. A számviteli költség 1000 egység."], c: 3 },
+    { t: "Az opporunity cost (alternatív költség) a következő legjobb választási lehetőség elmaradt hozadéka.", o: TF, c: 0 },
+    { t: "A határköltség mindig megegyezik a határbevétellel.", o: TF, c: 1 },
+    { t: "A határköltség a teljes költség termelési volumen szerinti első parciális deriváltja.", o: TF, c: 0 },
+    { t: "Ha egy termék alternatív költsége az egyik termelőnél 5y, a másiknál 4y, akkor az utóbbi a terméket relatív költséghátránnyal gyártja.", o: TF, c: 1 },
+    { t: "Az alternatív költség egy lehetőség megvalósításának közvetlen önköltsége.", o: TF, c: 1 },
+    { t: "Döntse el, hogy adott termék keresleti függvénye jobbra vagy balra tolódik el, ha felröppen a hír, hogy a termék egészségre ártalmas.", o: ["a. balra.", "b. jobbra"], c: 0 },
+    { t: "A keresleti függvény megmutatja, hogy miként alakul az adott áru iránti piaci kereslet az áru árának változása esetén ceteris paribus.", o: TF, c: 0 },
+    { t: "Az isoquant-görbe azon tényezőkombinációk összessége az inputtérben, amelyek azonos termelési mennyiséget eredményeznek.", o: TF, c: 0 },
+    { t: "Az üzembezárási pontban a gazdasági profit negatív.", o: TF, c: 0 },
+    { t: "A fedezeti pontban a teljes bevétel megyegezik a fix költségekkel.", o: TF, c: 1 },
+    { t: "Az oligopol piacok egyensúlyi ára a tökéletes verseny és a monopólium egyensúlyi ára között helyezkedik el.", o: TF, c: 0 },
+    { t: "A rezerációs ár az az ár, melyet a fogyasztók maximálisan képesek és hajlandók megfizetni az adott áruért.", o: TF, c: 0 },
+    { t: "A piaci kínálat egy adott áru piacán a termelők összessége által értékesíteni kívánt árumennyiség.", o: TF, c: 0 },
+    { t: "A számvitel lényege a vállalat számítógépes információs rendszerének megfelelő működtetése.", o: TF, c: 1 },
+    { t: "Az alábbiak közül melyikre vonatkozik a következő: „Megmutatja, hogy mennyivel nő a termelés költsége, ha eggyel több terméket állítanak elő?”", o: ["a. Átlagos költség", "b. Átlagtermék", "c. Változó költség", "d. Átlagos változó költség", "e. Határköltség", "f. Határbevétel", "g. Átlagos fix költség", "h. Fix költség", "i. Teljes költség", "j. Határtermék", "k. Gazdasági költség"], c: 4 },
+    { t: "A fedezeti pont alatti termelésnél elképzelhető számviteli profit.", o: TF, c: 0 },
+    { t: "A fix költség termelési időfüggő költség.", o: TF, c: 0 },
+    { t: "A magyar mobiltelefon szolgáltatás piaca hasonlít az", o: ["a. oligopol piacra.", "b. monopolisztikus versenypiacra.", "c. monopol piacra."], c: 0 },
+    { t: "Az együttes termelés a termelési lehetőségek határgörbéjét nem befolyásolja.", o: TF, c: 1 },
+    { t: "Döntse el, hogy adott termék keresleti függvénye jobbra vagy balra tolódik el, ha a terméket kezdi kiszorítani egy modernebb típus.", o: ["a. balra.", "b. jobbra"], c: 0 },
+    { t: "Döntse el, hogy adott termék keresleti függvénye jobbra vagy balra tolódik el, ha a legnépszerűbb közéleti ember elmondja a tv-ben, hogy ezt a terméket kedveli.", o: ["a. balra.", "b. jobbra"], c: 1 },
+    { t: "Jelölje be az alábbiak közül azokat, amelyeket a fix költségekhez sorolhatunk!", o: ["a. Anyagköltség", "b. Az összeszerelő munkás munkabére", "c. A takarítónők munkabére egy takarítási szolgáltatást végző cégnél", "d. Géphasználat energiaköltsége", "e. A gyárban használt világítás"], c: 4 },
+    { t: "Minden termelési szinthez hozzárendelhetünk egy-egy isoquant-görbét.", o: TF, c: 0 },
+    { t: "A profit annál a termelt mennyiségnél maximális, ahol a határköltség megegyezik a határbevétellel.", o: TF, c: 0 },
+    { t: "A fedezeti pontban a gazdasági negatív.", o: TF, c: 1 },
+    { t: "Az üzembezárási pontban a gazdasági profit nulla.", o: TF, c: 1 },
+    { t: "Döntse el, hogy adott termék keresleti függvénye jobbra vagy balra tolódik el, ha a gyártó ellen nagy sajtóvisszhangú peres eljárás indul.", o: ["a. balra.", "b. jobbra"], c: 0 },
+    { t: "Döntse el, hogy adott termék keresleti függvénye jobbra vagy balra tolódik el, ha megnő a fogyasztók jövedelme.", o: ["a. balra.", "b. jobbra"], c: 1 },
+    { t: "Az alábbiak közül melyikre vonatkozik a következő: „Az a költségkategória, amely a feláldozott hasznokat is magában foglalja?”", o: ["a. Határbevétel", "b. Gazdasági költség", "c. Teljes költség", "d. Átlagos változó költség", "e. Átlagos fix költség", "f. Határköltség", "g. Változó költség", "h. Átlagos költség", "i. Átlagtermék", "j. Határtermék", "k. Fix költség"], c: 1 },
+    { t: "Az alábbiak közül melyikre vonatkozik a következő: „Az a költségtípus, amelynek értéke független termelés nagyságától függ?”", o: ["a. Teljes költség", "b. Átlagos költség", "c. Változó költség", "d. Határtermék", "e. Határbevétel", "f. Átlagos változó költség", "g. Átlagtermék", "h. Határköltség", "i. Fix költség", "j. Gazdasági költség", "k. Átlagos fix költség"], c: 8 },
+    { t: "Az alábbiak közül melyikre vonatkozik a következő: „Az egységnyi termelési tényezőre jutó termékmennyiség?”", o: ["a. Fix költség", "b. Átlagtermék", "c. Határköltség", "d. Átlagos változó költség", "e. Átlagos fix költség", "f. Átlagos költség", "g. Határbevétel", "h. Változó költség", "i. Teljes költség", "j. Gazdasági költség", "k. Határtermék"], c: 1 },
+    { t: "A fedezeti pontban a teljes bevétel megegyezik a teljes költséggel.", o: TF, c: 0 },
+    { t: "A számviteli profit a teljes bevétel és a számviteli költség differenciája.", o: TF, c: 0 },
+    { t: "A monopóliumra az alábbi állítások igazak:", o: ["a. Veszteség esetén kilép a piacról.", "b. Kínálati függvénye megegyezik a határköltség függvény üzembezárási pont felett kezdődő szakaszával.", "c. Árdiszkriminációval növelheti profitját.", "d. Ha árat emel, azzal minden esetben növelni tudja profitját."], c: 2 },
+    { t: "A legmagasabb ár, amit a fogyasztó még hajlandó megadni a termékért a _____ ár.", o: ["a. hipernormális.", "b. ajánlott fogyasztói.", "c. maximális fogyasztói.", "d. rezervációs.", "e. diszkriminatív.", "f. telítődési."], c: 3 },
+    { t: "Döntse el, hogy adott termék keresleti függvénye jobbra vagy balra tolódik el, ha a konkurencia botrányba keveredik.", o: ["a. balra.", "b. jobbra"], c: 1 },
+    { t: "A nagyobb termeléshez tartozó isoquant közelebb van az origóhoz.", o: TF, c: 1 },
+    { t: "Az alábbiak közül melyikre vonatkozik a következő: „Megmutatja, hogy a mennyi a termelés összes költsége a termelés mennyiségének függvényében?”", o: ["a. Határbevétel", "b. Átlagos fix költség", "c. Átlagtermék", "d. Határtermék", "e. Fix költség", "f. Határköltség", "g. Átlagos változó költség", "h. Gazdasági költség", "i. Átlagos költség", "j. Teljes költség", "k. Változó költség"], c: 9 },
+    { t: "A monopólium modellben a vállalatok száma egy.", o: TF, c: 0 },
+    { t: "A számviteli profit az opporunity cost (alternatív költség) és a gazdasági profit összege.", o: TF, c: 0 },
+    { t: "A komparatív előnyök elmélete az előzménye az abszolút előnyök elméletének.", o: TF, c: 1 },
+    { t: "A kereslet nagysága és meghatározó tényezőinek összessége közötti matematikai összefüggést mutatja a kínálati függvény.", o: TF, c: 1 },
+    { t: "A telítődési pont az az árumennyiség, melynél többet ingyen sem igényel a piac keresleti oldala.", o: TF, c: 0 },
+    { t: "Az alábbiak közül melyikre vonatkozik a következő: „Az a költségtípus, amelynek értéke a termelés nagyságától függ?”", o: ["a. Fix költség", "b. Átlagos fix költség", "c. Változó költség", "d. Átlagos költség", "e. Gazdasági költség", "f. Határköltség", "g. Átlagtermék", "h. Átlagos változó költség", "i. Határbevétel", "j. Teljes költség", "k. Határtermék"], c: 2 },
+    { t: "A vezérigazgató úr titkárnőjének fizetése fix költség.", o: TF, c: 0 },
+    { t: "A fedezeti pontban a gazdasági profit nulla.", o: TF, c: 0 },
+    { t: "A rövid távú költségfüggvények a termelési függvényből vezethetők le.", o: TF, c: 0 },
+    { t: "A monópólium modellben az egyensúlyi gazdasági profit a piacikereslettől, valamint a monopolista termelési költségétől függ.", o: TF, c: 0 },
+    { t: "Az aggregált kereslet egy adott országban, adott időszakban megvásárolni kívánt összes árumennyiség.", o: TF, c: 0 },
+    { t: "A tűzifa árának emelkedése miatt sok háztartásban visszatértek a gázfűtésre. Ezek szerint a tűzifa és a gáz", o: ["a. helyettesítő termék.", "b. inferior termék.", "c. kiegészítő termék."], c: 0 },
+    { t: "Az alábbiak közül melyikre vonatkozik a következő: „Megmutatja, hogy mennyivel nő a vállalat bevétele, ha eggyel többet termel?”", o: ["a. Fix költség", "b. Változó költség", "c. Határbevétel", "d. Átlagos változó költség", "e. Átlagtermék", "f. Határtermék", "g. Határköltség", "h. Átlagos költség", "i. Teljes költség", "j. Gazdasági költség", "k. Átlagos fix költség"], c: 2 },
+    { t: "A fix költség termelési volumenfüggő költség.", o: TF, c: 1 },
+    { t: "Az oligopol piacokon véges számú vállalat versenyez.", o: TF, c: 0 },
+    { t: "Melyik piaci szerkezetre vonatkozik az alábbi megállapítás? Jelölje be a helyes megoldást! „A sok kis cég próbál egyedi terméknel előrukkolni.”", o: ["a. Tökéletes verseny.", "b. Monoplium.", "c. Egyik sem.", "d. Oligopólium.", "e. Monopolisztikus verseny."], c: 4 }
+  ];
+
+  var Q = []; // az aktuális 15 random kérdés
+  var A = []; // a válaszok
+  var cur = 0;
+  var $ = function (id) { return document.getElementById(id); };
+
+  // Fisher-Yates véletlenszerű keverő funkció
+  function getRandom15() {
+    var shuffled = ALL_QUESTIONS.slice();
+    for (var i = shuffled.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var temp = shuffled[i];
+      shuffled[i] = shuffled[j];
+      shuffled[j] = temp;
+    }
+    return shuffled.slice(0, 15);
+  }
+
+  function startNewAttempt() {
+    Q = getRandom15();
+    A = new Array(Q.length).fill(null);
+    cur = 0;
+    render();
+  }
+
+  function show(which) {
+    ["qview", "sview", "rview"].forEach(function (v) { $(v).classList.toggle("hidden", v !== which); });
+  }
+
+  function grid() {
+    var g = $("qgrid"); g.innerHTML = "";
+    Q.forEach(function (_, i) {
+      var b = document.createElement("button");
+      b.className = "qb" + (A[i] !== null ? " done" : "") + (i === cur && !$("qview").classList.contains("hidden") ? " cur" : "");
+      b.textContent = (i + 1) + ".";
+      b.addEventListener("click", function () { cur = i; render(); });
+      g.appendChild(b);
+    });
+  }
+
+  function render() {
+    show("qview");
+    var q = Q[cur];
+    $("qn").textContent = cur + 1;
+    $("qtext").textContent = q.t;
+    $("qstate").textContent = A[cur] === null ? "Még nincs rá válasz" : "Válasz mentve";
+    var box = $("opts"); box.innerHTML = "";
+    q.o.forEach(function (label, i) {
+      var l = document.createElement("label"); l.className = "opt";
+      var r = document.createElement("input"); r.type = "radio"; r.name = "ans"; r.checked = A[cur] === i;
+      r.addEventListener("change", function () { A[cur] = i; $("qstate").textContent = "Válasz mentve"; grid(); });
+      var s = document.createElement("span"); s.textContent = label;
+      l.appendChild(r); l.appendChild(s); box.appendChild(l);
+    });
+    $("prev").style.visibility = cur === 0 ? "hidden" : "visible";
+    $("next").textContent = cur === Q.length - 1 ? "Befejezés ..." : "Következő oldal";
+    grid();
+  }
+
+  function summary() {
+    show("sview");
+    var h = "<tr><th>Kérdés</th><th>Állapot</th></tr>";
+    Q.forEach(function (_, i) { h += "<tr><td>" + (i + 1) + "</td><td>" + (A[i] === null ? "Még nincs rá válasz" : "Válasz mentve") + "</td></tr>"; });
+    $("stable").innerHTML = h;
+    grid();
+  }
+
+  function result() {
+    show("rview");
+    var s = 0, h = "";
+    Q.forEach(function (q, i) {
+      var a = A[i], ok = a === q.c; if (ok) s++;
+      h += "<div style='margin:6px 0'>" + (i + 1) + ". " + q.t + " &rarr; " +
+        (a === null ? "<span class='bad'>nincs válasz</span>" :
+          "<span class='" + (ok ? "ok" : "bad") + "'>" + q.o[a] + (ok ? " ✓" : " ✗ (helyes: " + q.o[q.c] + ")") + "</span>") + "</div>";
+    });
+    $("rbody").innerHTML = "<p><b>Eredmény: " + s + " / " + Q.length + "</b> (" + Math.round((s / Q.length) * 100) + "%)</p>" + h +
+      "<p><button class='btn blue' id='again'>Új próbálkozás (másik 15 kérdés)</button></p>";
+    $("again").addEventListener("click", startNewAttempt);
+  }
+
+  $("prev").addEventListener("click", function () { if (cur > 0) { cur--; render(); } });
+  $("next").addEventListener("click", function () { if (cur < Q.length - 1) { cur++; render(); } else { summary(); } });
+  $("finish").addEventListener("click", summary);
+  $("backtoq").addEventListener("click", render);
+  $("submit").addEventListener("click", result);
+  $("back").addEventListener("click", render);
+  $("newset").addEventListener("click", startNewAttempt);
+
+  // Első próbálkozás indítása
+  startNewAttempt();
+})();
+</script>
+</body>
+</html>
